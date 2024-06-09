@@ -265,7 +265,7 @@ const RECOGNITION_MODEL: &str =
 
 fn main() -> Result<(), Box<dyn Error>> {
     let args = parse_args()?;
-
+    
     // Fetch and load ML models.
     let detection_model_src = args
         .detection_model
@@ -279,7 +279,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             detection_model_src
         )
     })?;
-
+    
     let recognition_model_src = args
         .recognition_model
         .as_ref()
@@ -292,11 +292,11 @@ fn main() -> Result<(), Box<dyn Error>> {
             recognition_model_src
         )
     })?;
-
+    
     // Read image into CHW tensor.
     let color_img = read_image(&args.image)
         .with_context(|| format!("Failed to read image from {}", &args.image))?;
-
+    
     let engine = OcrEngine::new(OcrEngineParams {
         detection_model: Some(detection_model),
         recognition_model: Some(recognition_model),
@@ -307,7 +307,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             DecodeMethod::Greedy
         },
     })?;
-
+    
     let ocr_input = engine.prepare_input(color_img.view())?;
     if args.text_map || args.text_mask {
         let text_map = engine.detect_text_pixels(&ocr_input)?;
@@ -323,17 +323,17 @@ fn main() -> Result<(), Box<dyn Error>> {
             write_image("text-mask.png", text_mask.view())?;
         }
     }
-
+    
     let word_rects = engine.detect_words(&ocr_input)?;
-
+    
     let line_rects = engine.find_text_lines(&ocr_input, &word_rects);
     if args.text_line_images {
         write_preprocessed_text_line_images(&ocr_input, &engine, &line_rects, "lines")?;
         // write_text_line_images(color_img.view(), &line_rects, "lines")?;
     }
-
+    
     let line_texts = engine.recognize_text(&ocr_input, &line_rects)?;
-
+    
     let write_output_str = |content: String| -> Result<(), Box<dyn Error>> {
         if let Some(output_path) = &args.output_path {
             std::fs::write(output_path, content.into_bytes())
